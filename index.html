@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Let's Review!</title>
+  <style>
+    @font-face {
+      font-family: 'GF';
+      src: url('./font.otf') format('opentype');
+    }
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'GF', sans-serif;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #ffD;
+    }
+    button {
+      font-family: 'GF', sans-serif;
+      border: 3px solid #000;
+      background: #fff;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #000;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    button.correct { background: #5b9bd5 !important; color: #fff !important; border-color: #5b9bd5 !important; }
+    button.wrong   { background: #aaa    !important; color: #fff !important; border-color: #aaa    !important; }
+    button:disabled { cursor: default; }
+
+    /* SPLASH */
+    #splash {
+      position: fixed; inset: 0; z-index: 999;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #splash-btn {
+      width: 250px; height: 250px;
+      font-size: 26px;
+      border-radius: 28px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px;
+    }
+    #splash-btn .spl-icon { font-size: 80px; line-height: 1; }
+
+    /* MENU */
+    #menu {
+      display: none;
+      width: 100%; height: 100%;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 36px;
+    }
+    #menu-title { font-size: 54px; }
+    #menu-row   { display: flex; gap: 14px; align-items: stretch; }
+    .menu-card {
+      width: 260px; height: 260px;
+      border-radius: 18px;
+      border: 3px solid #000;
+      background: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px;
+      font-size: 24px; text-align: center;
+      padding: 12px 8px;
+      cursor: pointer; line-height: 1.25;
+    }
+    .menu-card .card-icon { font-size: 54px; line-height: 1; }
+
+    /* GAME WRAPPER */
+    #game-wrap {
+      display: none;
+      width: 100%; height: 100%;
+      flex-direction: column;
+    }
+    #game-header {
+      height: 10%; min-height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      border-bottom: 2px solid #000;
+      position: relative; flex-shrink: 0;
+    }
+    #back-btn {
+      position: absolute; left: 14px;
+      font-size: 38px;
+      background: none; border: none; padding: 0;
+      line-height: 1; cursor: pointer; border-radius: 0;
+    }
+    #game-title { font-size: 29px; }
+    #game-body  { flex: 1; position: relative; overflow: hidden; }
+
+    /* FORWARD BUTTON */
+    .fwd-btn {
+      font-size: 50px;
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 14px;
+      cursor: pointer;
+      padding: 6px 14px;
+      position: absolute;
+      z-index: 100;
+      line-height: 1;
+    }
+	
+	/* DIE */
+    .die-scene {
+      width: 164px; height: 164px;
+      perspective: 560px;
+      cursor: pointer;
+      margin-top: 28px;
+      flex-shrink: 0;
+    }
+.die-cube {
+      width: 164px; height: 164px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(0deg) rotateY(0deg);
+    }
+.die-face {
+      position: absolute;
+      width: 164px; height: 164px;
+      border: 3px solid #000;
+      background: #fff;
+      border-radius: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 76px; line-height: 1;
+    }
+    .die-face.f1 { transform: translateZ(82px); }
+    .die-face.f6 { transform: rotateY(180deg)  translateZ(82px); }
+    .die-face.f2 { transform: rotateY(90deg)   translateZ(82px); }
+    .die-face.f5 { transform: rotateY(-90deg)  translateZ(82px); }
+    .die-face.f3 { transform: rotateX(-90deg)  translateZ(82px); }
+    .die-face.f4 { transform: rotateX(90deg)   translateZ(82px); }
+	
+	
+	
+	
+  </style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <button id="splash-btn" onclick="startGame()">
+    <span class="spl-icon">⭐</span>
+    Let's Play!
+  </button>
+</div>
+
+<!-- MENU -->
+<div id="menu">
+  <div id="menu-title">Let's review!</div>
+  <div id="menu-row"></div>
+  <div class="die-scene" id="die-scene">
+    <div class="die-cube" id="die-cube">
+      <div class="die-face f1">1</div>
+      <div class="die-face f2">2</div>
+      <div class="die-face f3">3</div>
+      <div class="die-face f4">4</div>
+      <div class="die-face f5">5</div>
+      <div class="die-face f6">6</div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-wrap">
+  <div id="game-header">
+    <button id="back-btn" onclick="goMenu()">↩</button>
+    <span id="game-title"></span>
+  </div>
+  <div id="game-body"></div>
+</div>
+
+<script>
+'use strict';
+
+/* ─── LOCK DOWN BROWSER GESTURES ─────────────────────────────── */
+document.addEventListener('contextmenu',  e => e.preventDefault(), true);
+document.addEventListener('selectstart',  e => e.preventDefault(), true);
+document.addEventListener('dblclick',     e => e.preventDefault(), true);
+document.addEventListener('touchstart',   e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+window.addEventListener('wheel',          e => e.preventDefault(), { passive: false });
+
+/* ─── AUDIO ───────────────────────────────────────────────────── */
+function playAudio(name) {
+  try { new Audio(`./audio/${name}.wav`).play(); } catch (e) {}
+}
+
+/* ─── LIBRARY ─────────────────────────────────────────────────── */
+// [displayName, filename (no ext), pluralForm]
+const LIBRARY = [
+  ['apple',        'apple',        'apples'],
+  ['strawberry',   'strawberry',   'strawberries'],
+  ['banana',       'banana',       'bananas'],
+  ['peach',        'peach',        'peaches'],
+  ['grape',        'grape',        'grapes'],
+  ['lemon',        'lemon',        'lemons'],
+  ['orange',       'orange',       'oranges'],
+  ['melon',        'melon',        'melons'],
+  ['carrot',       'carrot',       'carrots'],
+  ['tomato',       'tomato',       'tomatoes'],
+  ['potato',       'potato',       'potatoes'],
+  ['green pepper', 'green_pepper', 'green peppers'],
+  ['onion',        'onion',        'onions'],
+  ['cucumber',     'cucumber',     'cucumbers'],
+  ['corn',         'corn',         'corn'],
+  ['lettuce',      'lettuce',      'lettuce'],
+  ['ice cream',    'ice_cream',    'ice cream'],
+  ['popcorn',      'popcorn',      'popcorn'],
+  ['chips',        'chips',        'chips'],
+  ['rice cracker', 'rice_cracker', 'rice crackers'],
+  ['chocolate',    'chocolate',    'chocolate'],
+  ['donut',        'donut',        'donuts'],
+  ['cookie',       'cookie',       'cookies'],
+  ['cake',         'cake',         'cake'],
+  ['candy',        'candy',        'candy'],
+  ['gummy candy',  'gummy_candy',  'gummy candy'],
+  ['penguin',      'penguin',      'penguins'],
+  ['flamingo',     'flamingo',     'flamingos'],
+  ['tiger',        'tiger',        'tigers'],
+  ['lion',         'lion',         'lions'],
+  ['panda',        'panda',        'pandas'],
+  ['bear',         'bear',         'bears'],
+  ['gorilla',      'gorilla',      'gorillas'],
+  ['kangaroo',     'kangaroo',     'kangaroos'],
+  ['monkey',       'monkey',       'monkeys'],
+  ['elephant',     'elephant',     'elephants'],
+  ['hippo',        'hippo',        'hippos'],
+  ['koala',        'koala',        'koalas'],
+  ['volleyball',   'volleyball',   'volleyball'],
+  ['dodgeball',    'dodgeball',    'dodgeball'],
+  ['soccer',       'soccer',       'soccer'],
+  ['baseball',     'baseball',     'baseball'],
+  ['basketball',   'basketball',   'basketball'],
+  ['swimming',     'swimming',     'swimming'],
+  ['table tennis', 'table_tennis', 'table tennis'],
+];
+
+/* ─── HELPERS ─────────────────────────────────────────────────── */
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ─── MENU CONFIG ─────────────────────────────────────────────── */
+const GAMES = [
+  { title: 'How many?',       icon: '🍎', color: '#FFE0A0', fn: gameHowMany    },
+  { title: 'Do you like...?', icon: '🎡', color: '#A0D4FF', fn: gameLike       },
+  { title: 'ALPHABET',        icon: '🔤', color: '#A8F0B8', fn: gameAlphabet   },
+  { title: 'Colors & Shapes', icon: '🔷', color: '#F0B8E8', fn: gameColors     },
+  { title: "What's this?",    icon: '❓', color: '#F0F0A0', fn: gameWhatsThis  },
+];
+
+function buildMenu() {
+  const row = document.getElementById('menu-row');
+  GAMES.forEach((g, i) => {
+    const card = document.createElement('button');
+    card.className = 'menu-card';
+    card.style.background = g.color;
+    card.innerHTML = `<span class="card-icon">${g.icon}</span>${g.title}`;
+    card.addEventListener('pointerup', () => openGame(i));
+    row.appendChild(card);
+  });
+}
+
+/* ─── NAVIGATION ──────────────────────────────────────────────── */
+function startGame() {
+  const de = document.documentElement;
+  (de.requestFullscreen || de.webkitRequestFullscreen || (() => {})).call(de);
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('menu').style.display = 'flex';
+}
+
+function goMenu() {
+  document.getElementById('menu').style.display = 'flex';
+  document.getElementById('game-wrap').style.display = 'none';
+}
+
+function openGame(i) {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('game-wrap').style.display = 'flex';
+  document.getElementById('game-title').textContent = GAMES[i].title;
+  const body = document.getElementById('game-body');
+  body.innerHTML = '';
+  GAMES[i].fn(body);
+}
+
+/* ─── FORWARD BUTTON ──────────────────────────────────────────── */
+function makeFwdBtn(parent, styleObj) {
+  const btn = document.createElement('button');
+  btn.className = 'fwd-btn';
+  btn.textContent = '➡';
+  Object.assign(btn.style, styleObj);
+  btn.addEventListener('pointerup', e => { e.stopPropagation(); goMenu(); });
+  parent.appendChild(btn);
+  return btn;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME 1 — HOW MANY?
+═══════════════════════════════════════════════════════════════ */
+function gameHowMany(parent) {
+  const startBtn = document.createElement('button');
+  startBtn.style.cssText = `
+    position:absolute; left:50%; top:45%;
+    transform:translate(-50%,-50%);
+    font-size:22px; padding:28px 48px; border-radius:20px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  `;
+  startBtn.innerHTML = '<span style="font-size:84px;line-height:1">🍎</span>How many?';
+  parent.appendChild(startBtn);
+  startBtn.addEventListener('pointerup', () => { startBtn.remove(); doHowMany(parent); });
+}
+
+function doHowMany(parent) {
+  const W = parent.clientWidth;
+  const H = parent.clientHeight;
+  const targetCount = Math.floor(Math.random() * 20) + 1;
+
+  const topBound  = H * 0.10;
+  const botBound  = H * 0.88;
+  const minS = 52, maxS = 88;
+  const placed = [];
+
+  function overlaps(nx, ny, ns) {
+    for (const p of placed) {
+      const dx = nx - p.x, dy = ny - p.y;
+      if (Math.sqrt(dx * dx + dy * dy) < (ns + p.s) * 0.55 + 6) return true;
+    }
+    return false;
+  }
+
+  let spawned = 0;
+  for (let attempt = 0; attempt < 3000 && spawned < targetCount; attempt++) {
+    const s  = minS + Math.random() * (maxS - minS);
+    const x  = 10 + Math.random() * (W - s - 20);
+    const y  = topBound + Math.random() * (botBound - topBound - s - H * 0.12);
+    const cx = x + s / 2, cy = y + s / 2;
+    if (!overlaps(cx, cy, s)) {
+      placed.push({ x: cx, y: cy, s });
+      const img = document.createElement('img');
+      img.src = './images/apple.png';
+      img.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${s}px;height:${s}px;object-fit:contain;pointer-events:none;`;
+      parent.appendChild(img);
+      spawned++;
+    }
+  }
+
+  /* Answer buttons */
+  const correct = spawned;
+  const wrongSet = new Set([correct]);
+  let safety = 0;
+  while (wrongSet.size < 3 && safety++ < 200) {
+    const delta = Math.ceil(Math.random() * 5);
+    const cand  = correct + (Math.random() < 0.5 ? delta : -delta);
+    if (cand >= 1 && cand <= 25) wrongSet.add(cand);
+  }
+  while (wrongSet.size < 3) {
+    for (let v = 1; v <= 30; v++) { if (!wrongSet.has(v)) { wrongSet.add(v); break; } }
+  }
+  const answers = shuffle([...wrongSet]);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = `
+    position:absolute; bottom:1%; left:0; right:0; height:10%;
+    display:flex; align-items:center; justify-content:space-evenly;
+  `;
+  parent.appendChild(btnRow);
+
+  let done = false;
+  answers.forEach(val => {
+    const b = document.createElement('button');
+    b.textContent = val;
+    b.style.cssText = 'font-size:40px; padding:6px 30px; border-radius:14px;';
+    b.addEventListener('pointerup', () => {
+      if (done) return;
+      if (val === correct) {
+        done = true;
+        b.classList.add('correct');
+        playAudio('right');
+        btnRow.querySelectorAll('button').forEach(x => x.disabled = true);
+        makeFwdBtn(parent, { left: '50%', top: '50%', transform: 'translate(-50%,-50%)' });
+      } else {
+        b.classList.add('wrong');
+        b.disabled = true;
+        playAudio('wrong');
+      }
+    });
+    btnRow.appendChild(b);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME 2 — DO YOU LIKE...?
+═══════════════════════════════════════════════════════════════ */
+function gameLike(parent) {
+  const W = parent.clientWidth, H = parent.clientHeight;
+  const items = shuffle(LIBRARY).slice(0, 8);
+  const titleEl = document.getElementById('game-title');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.cssText = 'position:absolute;top:0;left:0;';
+  parent.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const R   = Math.min(W, H) * 0.40;
+  const cx  = W / 2;
+  const cy  = H / 2 + 16;
+  const SEG = Math.PI * 2 / 8;
+  const COLORS = ['#FFE0A0','#A0D4FF','#A8F0B8','#F0B8E8','#F0F0A0','#D4A8FF','#A8FFD4','#FFD4A8'];
+
+  /* rotation=0 already places boundary at top (3π/2 angle),
+     so the pointer starts between two options as required. */
+  let rotation  = 0;
+  let spinning  = false;
+  let landed    = false;
+
+  /* Pre-load images */
+  let loadedCt = 0;
+  items.forEach(item => {
+    const img = new Image();
+    img.src = `./images/${item[1]}.png`;
+    item._img = img;
+    img.onload = img.onerror = () => { loadedCt++; render(); };
+  });
+
+  function render() { ctx.clearRect(0, 0, W, H); drawWheel(-1); drawPointer(); }
+
+  function drawWheel(hiIdx) {
+    for (let i = 0; i < 8; i++) {
+      const start = rotation + i * SEG;
+      const end   = start + SEG;
+      const mid   = start + SEG / 2;
+      /* section fill */
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, start, end);
+      ctx.closePath();
+      ctx.fillStyle = (i === hiIdx) ? '#5b9bd5' : COLORS[i];
+      ctx.fill();
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+      /* image */
+      const imgDist = R * 0.60;
+      const imgSize = R * 0.27;
+      const imx = cx + imgDist * Math.cos(mid);
+      const imy = cy + imgDist * Math.sin(mid);
+      ctx.save();
+      ctx.translate(imx, imy);
+      ctx.rotate(mid + Math.PI / 2);
+      if (items[i]._img && items[i]._img.complete && items[i]._img.naturalWidth > 0) {
+        ctx.drawImage(items[i]._img, -imgSize / 2, -imgSize / 2, imgSize, imgSize);
+      } else {
+        ctx.fillStyle = '#888';
+        ctx.fillRect(-imgSize / 2, -imgSize / 2, imgSize, imgSize);
+      }
+      /* label */
+      ctx.fillStyle = '#000';
+      ctx.font = `${Math.max(9, R * 0.055)}px GF,sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(items[i][0], 0, imgSize / 2 + 3);
+      ctx.restore();
+    }
+    /* outer ring */
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.stroke();
+    /* center nub */
+    ctx.beginPath(); ctx.arc(cx, cy, R * 0.065, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  function drawPointer() {
+    /* triangle tip points DOWN at the top of the wheel */
+    const tipX = cx, tipY = cy - R - 2;
+    const bW = 18, bH = 32;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - bW, tipY - bH);
+    ctx.lineTo(tipX + bW, tipY - bH);
+    ctx.closePath();
+    ctx.fillStyle = '#000'; ctx.fill();
+  }
+
+  canvas.addEventListener('pointerup', () => {
+    if (spinning || landed) return;
+    spinning = true;
+    let vel = 18 + Math.random() * 24;
+    const decel = 0.974;
+    function tick() {
+      rotation += vel * 0.016;
+      vel *= decel;
+      ctx.clearRect(0, 0, W, H);
+      drawWheel(-1);
+      drawPointer();
+      if (vel < 0.015) {
+        spinning = false; landed = true;
+        /* which section is under the top pointer? */
+        const topAngle = 3 * Math.PI / 2;
+        const norm = ((topAngle - rotation) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const idx  = Math.floor(norm / SEG) % 8;
+        ctx.clearRect(0, 0, W, H);
+        drawWheel(idx);
+        drawPointer();
+        titleEl.textContent = `Do you like ${items[idx][2]}?`;
+        makeFwdBtn(parent, { right: '20px', bottom: '20px' });
+        return;
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  });
+
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME 3 — ALPHABET
+═══════════════════════════════════════════════════════════════ */
+function gameAlphabet(parent) {
+  const W = parent.clientWidth, H = parent.clientHeight;
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const target  = LETTERS[Math.floor(Math.random() * 26)];
+
+  /* --- Button sizing first (2 rows of 13, square, fill bottom edge) --- */
+  const GAP  = 5;
+  const COLS = 13, ROWS = 2;
+  const btnSz = Math.min(
+    Math.floor((W - (COLS + 1) * GAP) / COLS),
+    Math.floor((H * 0.26 - (ROWS + 1) * GAP) / ROWS)
+  );
+  const btnAreaH = ROWS * btnSz + (ROWS + 1) * GAP;
+
+  /* --- Square fits in remaining space above button area --- */
+  const topH   = H - btnAreaH;
+  const sqSize = Math.min(W * 0.54, topH * 0.82);
+  const sqX    = (W - sqSize) / 2;
+  const sqY    = (topH - sqSize) / 2;
+
+  /* Bordered letter box */
+  const letterWrap = document.createElement('div');
+  letterWrap.style.cssText = `
+    position:absolute; left:${sqX}px; top:${sqY}px;
+    width:${sqSize}px; height:${sqSize}px;
+    border:3px solid #000; border-radius:12px; overflow:hidden;
+  `;
+  parent.appendChild(letterWrap);
+
+  const letterEl = document.createElement('div');
+  letterEl.textContent = target;
+  letterEl.style.cssText = `
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:${sqSize * 0.68}px; line-height:1;
+    color:#000; z-index:1;
+  `;
+  letterWrap.appendChild(letterEl);
+
+  /* Black mask canvas — redrawn every frame, NOT permanently erased */
+  const mask = document.createElement('canvas');
+  mask.width  = sqSize;
+  mask.height = sqSize;
+  mask.style.cssText = 'position:absolute;top:0;left:0;z-index:2;border-radius:9px;';
+  letterWrap.appendChild(mask);
+  const mctx = mask.getContext('2d');
+
+  let flPos  = null;   // {x,y} relative to mask canvas, null when finger is up
+  let solved = false;
+
+  function renderMask() {
+    mctx.clearRect(0, 0, sqSize, sqSize);
+    if (solved) return;                  // solved = fully transparent
+    mctx.fillStyle = '#000';
+    mctx.fillRect(0, 0, sqSize, sqSize);
+    if (flPos) {
+      mctx.globalCompositeOperation = 'destination-out';
+      mctx.beginPath();
+      mctx.arc(flPos.x, flPos.y, 44, 0, Math.PI * 2);
+      mctx.fill();
+      mctx.globalCompositeOperation = 'source-over';
+    }
+  }
+  renderMask(); // start fully black
+
+  /* Flashlight sprite */
+  const fl = document.createElement('img');
+  fl.src = './images/flashlight.png';
+  fl.style.cssText = 'position:absolute;width:144px;height:72px;pointer-events:none;display:none;z-index:20;';
+  parent.appendChild(fl);
+
+  let holding = false;
+
+  function updateFinger(ex, ey) {
+    flPos = { x: ex - sqX - 52, y: ey - sqY - 0 };
+    renderMask();
+    fl.style.left = (ex - 36) + 'px';
+    fl.style.top  = (ey -  4) + 'px';
+  }
+
+  parent.addEventListener('pointerdown', e => {
+    if (solved) return;
+    e.preventDefault();
+    holding = true;
+    fl.style.display = 'block';
+    const r = parent.getBoundingClientRect();
+    updateFinger(e.clientX - r.left, e.clientY - r.top);
+  });
+  parent.addEventListener('pointermove', e => {
+    if (!holding || solved) return;
+    e.preventDefault();
+    const r = parent.getBoundingClientRect();
+    updateFinger(e.clientX - r.left, e.clientY - r.top);
+  });
+  const endHold = () => {
+    holding = false;
+    fl.style.display = 'none';
+    flPos = null;
+    renderMask(); // finger up → restore full black
+  };
+  parent.addEventListener('pointerup',     endHold);
+  parent.addEventListener('pointercancel', endHold);
+
+  /* Letter buttons — square, filling bottom edge */
+  const btnArea = document.createElement('div');
+  btnArea.style.cssText = `
+    position:absolute; bottom:0; left:0; right:0;
+    height:${btnAreaH}px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-end;
+    gap:${GAP}px; padding-bottom:${GAP}px;
+  `;
+  parent.appendChild(btnArea);
+
+  ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ'].forEach(rowLetters => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText = `display:flex; gap:${GAP}px;`;
+    rowLetters.split('').forEach(ltr => {
+      const b = document.createElement('button');
+      b.textContent = ltr;
+      b.style.cssText = `
+        width:${btnSz}px; height:${btnSz}px;
+        font-size:${Math.floor(btnSz * 0.48)}px;
+        border-radius:8px; padding:0;
+        display:flex; align-items:center; justify-content:center;
+      `;
+      b.addEventListener('pointerup', e => {
+        e.stopPropagation();
+        if (solved) return;
+        if (ltr === target) {
+          solved = true;
+          b.classList.add('correct');
+          playAudio('right');
+          fl.style.display = 'none';
+          holding = false;
+          flPos = null;
+          renderMask(); // clears to transparent because solved=true
+          btnArea.querySelectorAll('button').forEach(x => x.disabled = true);
+          makeFwdBtn(parent, {
+            left: (sqX + sqSize + 14) + 'px',
+            top:  (sqY + sqSize / 2 - 38) + 'px',
+          });
+        } else {
+          b.classList.add('wrong');
+          b.disabled = true;
+          playAudio('wrong');
+        }
+      });
+      rowDiv.appendChild(b);
+    });
+    btnArea.appendChild(rowDiv);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME 4 — COLORS & SHAPES
+═══════════════════════════════════════════════════════════════ */
+const SHAPE_LIST = ['circle', 'heart', 'triangle', 'square', 'rectangle', 'star'];
+const COLOR_LIST = ['red', 'yellow', 'pink', 'green', 'purple', 'orange', 'blue', 'black'];
+const COLOR_HEX  = {
+  red: '#e53935', yellow: '#fdd835', pink: '#e91e8c', green: '#43a047',
+  purple: '#8e24aa', orange: '#fb8c00', blue: '#1e88e5', black: '#333',
+};
+
+function drawShape(ctx, shape, x, y, w, h, color) {
+  const sz = Math.min(w, h);
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  switch (shape) {
+    case 'circle':
+      ctx.arc(cx, cy, sz * 0.44, 0, Math.PI * 2);
+      break;
+    case 'heart': {
+      const s = sz * 0.44;
+      const oy = cy + sz * 0.05; // nudge center down slightly
+      ctx.moveTo(cx, oy + s);
+      ctx.bezierCurveTo(cx - s * 0.10, oy + s * 0.60,  cx - s, oy + s * 0.30,  cx - s, oy - s * 0.10);
+      ctx.bezierCurveTo(cx - s,         oy - s * 0.70,  cx - s * 0.50, oy - s,  cx,     oy - s * 0.48);
+      ctx.bezierCurveTo(cx + s * 0.50,  oy - s,         cx + s, oy - s * 0.70,  cx + s, oy - s * 0.10);
+      ctx.bezierCurveTo(cx + s,         oy + s * 0.30,  cx + s * 0.10, oy + s * 0.60,  cx, oy + s);
+      ctx.closePath();
+      break;
+    }
+    case 'triangle': {
+      const r = sz * 0.47;
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r * Math.sin(2 * Math.PI / 3), cy - r * Math.cos(2 * Math.PI / 3));
+      ctx.lineTo(cx + r * Math.sin(4 * Math.PI / 3), cy - r * Math.cos(4 * Math.PI / 3));
+      ctx.closePath();
+      break;
+    }
+    case 'square': {
+      const sq = sz * 0.84;
+      ctx.rect(cx - sq / 2, cy - sq / 2, sq, sq);
+      break;
+    }
+    case 'rectangle': {
+      const rw = sz * 0.84, rh = sz * 0.48;
+      ctx.rect(cx - rw / 2, cy - rh / 2, rw, rh);
+      break;
+    }
+    case 'star': {
+      const out = sz * 0.46, inn = out * 0.42;
+      for (let i = 0; i < 10; i++) {
+        const a  = Math.PI / 5 * i - Math.PI / 2;
+        const rd = i % 2 === 0 ? out : inn;
+        if (i === 0) ctx.moveTo(cx + rd * Math.cos(a), cy + rd * Math.sin(a));
+        else          ctx.lineTo(cx + rd * Math.cos(a), cy + rd * Math.sin(a));
+      }
+      ctx.closePath();
+      break;
+    }
+  }
+  ctx.fill();
+}
+
+function gameColors(parent) {
+  const W = parent.clientWidth, H = parent.clientHeight;
+  const targetShape = rnd(SHAPE_LIST);
+  const targetColor = rnd(COLOR_LIST);
+
+  /* Left half — target */
+  const leftC = document.createElement('canvas');
+  leftC.width  = W / 2;
+  leftC.height = H;
+  leftC.style.cssText = 'position:absolute;left:0;top:0;';
+  parent.appendChild(leftC);
+  const pad = 38;
+  drawShape(leftC.getContext('2d'), targetShape, pad, pad, W / 2 - pad * 2, H - pad * 2, COLOR_HEX[targetColor]);
+
+  /* Divider */
+  const div = document.createElement('div');
+  div.style.cssText = `position:absolute;left:${W/2}px;top:0;width:2px;height:100%;background:#ccc;`;
+  parent.appendChild(div);
+
+  buildColorRight(parent, W, H, targetShape, targetColor, null, null);
+}
+
+function buildColorRight(parent, W, H, tShape, tColor, selColor, selShape) {
+  let old = parent.querySelector('#crs');
+  if (old) old.remove();
+
+  const rW = W / 2 - 2;
+  const rH = H;
+  const rDiv = document.createElement('div');
+  rDiv.id = 'crs';
+  rDiv.style.cssText = `position:absolute;left:${W/2+2}px;top:0;width:${rW}px;height:${rH}px;`;
+  parent.appendChild(rDiv);
+
+  const blobSz  = Math.min(rW / 5.2, rH * 0.13);
+  const shapeSz = Math.min(rW / 4.4, rH * 0.15);
+  const blobShape = selShape || 'circle';
+
+  /* Color blobs — 2×4 */
+  const blobWrap = document.createElement('div');
+  blobWrap.style.cssText = `
+    position:absolute; top:${rH*0.04}px; left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  `;
+  rDiv.appendChild(blobWrap);
+
+  [COLOR_LIST.slice(0, 4), COLOR_LIST.slice(4, 8)].forEach(row => {
+    const rowD = document.createElement('div');
+    rowD.style.cssText = 'display:flex; gap:6px;';
+    row.forEach(col => {
+      const c = document.createElement('canvas');
+      c.width = blobSz; c.height = blobSz;
+      c.style.cssText = `cursor:pointer;border-radius:6px;outline:${selColor===col?'3px solid #000':'none'};`;
+      drawShape(c.getContext('2d'), blobShape, 2, 2, blobSz-4, blobSz-4, COLOR_HEX[col]);
+      c.addEventListener('pointerup', () => {
+        if (selShape) evalColors(parent, W, H, tShape, tColor, col, selShape);
+        else          buildColorRight(parent, W, H, tShape, tColor, col, null);
+      });
+      rowD.appendChild(c);
+    });
+    blobWrap.appendChild(rowD);
+  });
+
+  /* Shape choices — 2×3, gray+unbordered */
+  const shapeWrap = document.createElement('div');
+  shapeWrap.style.cssText = `
+    position:absolute; bottom:${rH*0.04}px; left:0; right:0;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  `;
+  rDiv.appendChild(shapeWrap);
+
+  [SHAPE_LIST.slice(0, 3), SHAPE_LIST.slice(3, 6)].forEach(row => {
+    const rowD = document.createElement('div');
+    rowD.style.cssText = 'display:flex; gap:6px;';
+    row.forEach(sh => {
+      const c = document.createElement('canvas');
+      c.width = shapeSz; c.height = shapeSz;
+      c.style.cssText = `cursor:pointer;outline:${selShape===sh?'3px solid #000':'none'};`;
+      const shColor = selColor ? COLOR_HEX[selColor] : '#aaa';
+      drawShape(c.getContext('2d'), sh, 2, 2, shapeSz-4, shapeSz-4, shColor);
+      c.addEventListener('pointerup', () => {
+        if (selColor) evalColors(parent, W, H, tShape, tColor, selColor, sh);
+        else          buildColorRight(parent, W, H, tShape, tColor, null, sh);
+      });
+      rowD.appendChild(c);
+    });
+    shapeWrap.appendChild(rowD);
+  });
+}
+
+function evalColors(parent, W, H, tShape, tColor, cColor, cShape) {
+  let old = parent.querySelector('#crs');
+  if (old) old.remove();
+
+  const rW = W / 2 - 2;
+  const crs = document.createElement('div');
+  crs.id = 'crs';
+  crs.style.cssText = `position:absolute;left:${W/2+2}px;top:0;width:${rW}px;height:${H}px;`;
+  parent.appendChild(crs);
+
+  const sc = document.createElement('canvas');
+  sc.width = rW; sc.height = H;
+  sc.style.cssText = 'position:absolute;left:0;top:0;';
+  crs.appendChild(sc);
+  const pad = 38;
+  drawShape(sc.getContext('2d'), cShape, pad, pad, rW-pad*2, H-pad*2, COLOR_HEX[cColor]);
+
+  if (cColor === tColor && cShape === tShape) {
+    playAudio('right');
+    makeFwdBtn(parent, { left: '50%', top: '50%', transform: 'translate(-50%,-50%)' });
+  } else {
+    setTimeout(() => {
+      playAudio('wrong');
+      let shakes = 0;
+      const iv = setInterval(() => {
+        crs.style.transform = shakes % 2 === 0 ? 'translateX(18px)' : 'translateX(-18px)';
+        if (++shakes > 9) {
+          clearInterval(iv);
+          crs.style.transform = '';
+          buildColorRight(parent, W, H, tShape, tColor, null, null);
+        }
+      }, 65);
+    }, 650);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GAME 5 — WHAT'S THIS?
+═══════════════════════════════════════════════════════════════ */
+function gameWhatsThis(parent) {
+  const W = parent.clientWidth, H = parent.clientHeight;
+
+  const item   = rnd(LIBRARY);
+  const others = shuffle(LIBRARY.filter(x => x[1] !== item[1])).slice(0, 2);
+  const opts   = shuffle([item, ...others]);
+
+  /* Blackened main image */
+  const mainImg = document.createElement('img');
+  mainImg.src = `./images/${item[1]}.png`;
+  mainImg.style.cssText = `
+    position:absolute;
+    left:50%; top:${H*0.04}px;
+    transform:translateX(-50%);
+    height:${H*0.60}px;
+    object-fit:contain;
+    filter:brightness(0);
+    pointer-events:none;
+  `;
+  parent.appendChild(mainImg);
+
+  /* Three option buttons */
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = `
+    position:absolute; bottom:${H*0.02}px; left:0; right:0;
+    height:${H*0.22}px;
+    display:flex; align-items:center; justify-content:space-evenly;
+  `;
+  parent.appendChild(btnRow);
+
+  let done = false;
+  const btnSz = H * 0.19;
+
+  opts.forEach(opt => {
+    const b = document.createElement('button');
+    b.style.cssText = `
+      width:${btnSz}px; height:${btnSz}px;
+      padding:6px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+    `;
+    const img = document.createElement('img');
+    img.src = `./images/${opt[1]}.png`;
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+    b.appendChild(img);
+
+    b.addEventListener('pointerup', () => {
+      if (done) return;
+      if (opt[1] === item[1]) {
+        done = true;
+        b.classList.add('correct');
+        playAudio('right');
+        btnRow.querySelectorAll('button').forEach(x => x.disabled = true);
+        mainImg.style.filter = 'none';
+        makeFwdBtn(parent, {
+          right: '18px',
+          top:   (H * 0.04 + H * 0.30 - 32) + 'px',
+        });
+      } else {
+        b.classList.add('wrong');
+        b.disabled = true;
+        playAudio('wrong');
+      }
+    });
+    btnRow.appendChild(b);
+  });
+}
+
+/* ─── 3D DIE ──────────────────────────────────────────────────── */
+(function() {
+  // To show face N toward viewer, rotate the cube to these [X, Y] degrees
+  const FACE_ROT = [
+    null,
+    [0,    0],   // 1 = front
+    [0,   90],   // 2 = left face rotated to front
+    [-90,  0],   // 3 = bottom face rotated to front
+    [90,   0],   // 4 = top face rotated to front
+    [0,  -90],   // 5 = right face rotated to front
+    [0,  180],   // 6 = back face rotated to front
+  ];
+
+  let curX = 0, curY = 0, rolling = false;
+
+  function rollDie() {
+    if (rolling) return;
+    rolling = true;
+    const val = Math.floor(Math.random() * 6) + 1;
+    const [tx, ty] = FACE_ROT[val];
+
+    // Normalise current mod 360, find shortest delta, add full spins
+    const dx = ((tx - (curX % 360)) + 360) % 360;
+    const dy = ((ty - (curY % 360)) + 360) % 360;
+    curX += 720 + dx;
+    curY += 720 + dy;
+
+    const cube = document.getElementById('die-cube');
+    cube.style.transition = 'transform 1.3s cubic-bezier(0.15, 0.65, 0.30, 1.0)';
+    cube.style.transform  = `rotateX(${curX}deg) rotateY(${curY}deg)`;
+
+    setTimeout(() => { rolling = false; }, 1400);
+  }
+
+  document.getElementById('die-scene').addEventListener('pointerup', rollDie);
+})();
+
+/* ─── INIT ────────────────────────────────────────────────────── */
+buildMenu();
+</script>
+</body>
+</html>
